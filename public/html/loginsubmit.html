@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<meta charset="utf8">
+<meta lang="en">
+<!--Login page-->
+<head>
+    <title>Signup</title>
+</head>
+<body>
+    <p>Failed login!</p>
+    <p id="error"></p>
+    <button onclick="window.location.replace('/login')">Go Back</button>
+    <script>
+        async function getError()
+        {
+            const res = await fetch('/getError');
+            const session = await res.json();
+            console.log(session);
+            if(session.error)
+            {
+                document.getElementById("error").innerText = session.error;
+            }
+        }
+        getError();
+    </script>
+</body>

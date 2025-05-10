@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf8">
+<!--Signup page-->
+<head>
+    <title>Signup</title>
+</head>
+<body>
+    <p>Failed signup!</p>
+    <p id="error"></p>
+    <button onclick="window.location.replace('/signup')">Go Back</button>
+    <script>
+        async function getError()
+        {
+            const res = await fetch('/getError');
+            const session = await res.json();
+            if(session.error)
+            {
+                document.getElementById("error").innerText = session.error;
+            }
+        }
+        getError();
+    </script>
+</body>
+</html>
