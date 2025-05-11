@@ -1,54 +1,24 @@
 /*
 Goals:
-- Simple website
-- Node.js + MongoDB
-- Express
+- EJS
+- Authorization
+- Bootstrap
 
-- If user successfully authenticates
-  (correct email and password),
-  new session to store the user's info
-  - A user is "logged in" if
-    they have a valid session
-- The encrypted session information is
-  stored in a MongoDB session database 
-  for 1 hour (and expires after)
-  - If a user is not logged in,
-    they can't see the members page
-- We take in input from the user to
-  capture account information and ask
-  for log in
-  - Properly deal with NoSQL injection
-    attacks
-- .env file to store encryption secrets
-  and MongoDB database credentials
-  - DO NOT STORE PASSWORDS IN THE GIT REPO
-- Host the site on Render
+- As a user, I want the website to have a consistent look and feel.
+- As a user, I want the website to have a logical flow.
+- As a user, I want the website to be aesthetically pleasing.
+- As a user, I want the website to look good on my mobile phone and on my desktop computer.
+- As an administrator of the site, I want to be able to see all the users and which type they are.
+- As an administrator of the site, I want to be able to promote users that I trust admin privileges
+  and demote users if I don't.
+- As an administrator of the site, I want to make sure only admins can see the admin page.
 
-User stories:
-- As a user, I want to be able to 
-  sign up for a new account so that 
-  I can access the members only area. 
-- As a user, I want to be able to
-  sign in to my existing account so that
-  I can access the members only area. 
-- As a user, I want to be able to
-  sign out of my account so that 
-  nobody else can access it. 
-- As a user, I want to see a home page 
-  with the options to sign up or sign in
-  if I am not currently logged in.
-- As a user, I want to see a home page
-  welcoming me and showing me the option
-  to go to the members only area and sign
-  out if I am currently logged in. 
-- As a user, I want to be able to see a
-  random image when I access the members
-  only area so that it is more 
-  visually interesting. 
-- As a user, I want to be informed if the
-  username or password I entered is
-  incorrect when signing in so that I can
-  correct the mistake.
+- As a developer, I want to have a code base that is easy to read and to maintain.
+- As a developer, I want to minimize the amount times I copy/paste the same or similar code.
+- As a developer, I want to avoid editing the same file as my teammates to avoid git merge
+  conflicts.
+- As a developer, I want to avoid large code files (with lots of lines) – instead I prefer several,
+  smaller code files.
 */
 
 // Three things:
@@ -74,6 +44,7 @@ const port = process.env.PORT || 3000;
 
 // ----- App -----
 const app = express();
+app.set('view engine', 'ejs');
 
 // Pick amount of hash rounds to
 // hash the passwords
@@ -117,6 +88,32 @@ app.use(session({
 app.use(express.urlencoded({extended: false}));
 // Sets root folder
 app.use(express.static(__dirname + "/public"));
+
+// Checks for authentication
+async function redirectIfAuth(req, res, next)
+{
+    if(req.session.authenticated)
+    {
+        res.redirect('/loggedin');
+    }
+    else
+    {
+        next();
+    }
+}
+
+// Checks for authentication
+async function redirectIfNoAuth(req, res, next)
+{
+    if(!req.session.authenticated)
+    {
+        res.redirect('/');
+    }
+    else
+    {
+        next();
+    }
+}
 
 // Returns true if a given email is
 // in the "database", else false
@@ -164,48 +161,36 @@ function redirectLoggedInUser(req, res)
 
 // App stuff
 app.get('/', (req,res) => {
-    // how it works in 1537
-    let doc = fs.readFileSync("./public/html/main.html", "utf8");
-    res.send(doc);
+    res.render('main', {
+        title: "Main Page",
+        auth: req.session.authenticated || "None"
+    });
 });
 
 app.get('/signup', (req,res) => {
-    let doc = fs.readFileSync("./public/html/signup.html", "utf8");
-    res.send(doc);
+    let error = req.session.validationError;
+    req.session.validationError = "";
+    res.render("signup", {
+        title: "Sign Up",
+        error: error
+    });
 });
 
-app.get('/signupsubmit', (req,res) => {
-    let doc = fs.readFileSync("./public/html/signupsubmit.html", "utf8");
-    res.send(doc);
+app.get('/login', redirectIfAuth, (req,res) => {
+    let error = req.session.validationError;
+    req.session.validationError = "";
+    res.render("login", {
+        title: "Log In",
+        error: error
+    });
 });
 
-app.get('/login', (req,res) => {
-    if(req.session.authenticated)
-        {
-            res.redirect('/loggedin');
-        }
-        else
-        {
-            let doc = fs.readFileSync("./public/html/login.html", "utf8");
-            res.send(doc);
-        }
-});
-
-app.get('/loginsubmit', (req,res) => {
-    let doc = fs.readFileSync("./public/html/loginsubmit.html", "utf8");
-    res.send(doc);
-});
-
-app.get('/loggedin', (req,res) => {
-    if(!req.session.authenticated)
-    {
-        res.redirect('/');
-    }
-    else
-    {
-        let doc = fs.readFileSync("./public/html/loggedin.html", "utf8");
-        res.send(doc);
-    }
+app.get('/loggedin', redirectIfNoAuth, (req,res) => {
+    res.render("loggedin", {
+        title: "Main Page",
+        name: req.session.name || 'user',
+        js: ["js/loggedin.js"]
+    });
 });
 
 app.get('/logout', (req,res) => {
@@ -214,24 +199,9 @@ app.get('/logout', (req,res) => {
 });
 
 app.get('/dne', (req,res) => {
-    let doc = fs.readFileSync("./public/html/dne.html", "utf8");
-    res.send(doc);
-});
-
-// Gets information needed by some pages
-// (I didn't know EJS existed when I did this -
-// this is definitely *some* breach of privacy but
-// it doesn't need to be perfect anyway)
-app.get('/getName', (req,res) => {
-    res.json({name: req.session.name || 'User'});
-});
-
-app.get('/getError', (req,res) => {
-    res.json({error: req.session.validationError});
-});
-
-app.get('/getAuth', (req,res) => {
-    res.json({auth: req.session.authenticated || 'None'});
+    res.status(404).render("dne", {
+        title: "404 - Page Does Not Exist"
+    });
 });
 
 // add user to "database"
@@ -277,7 +247,7 @@ app.post('/addUser', async (req,res) => {
         }
         if(error == true)
         {
-            res.redirect('/signupsubmit');
+            res.redirect('/signup');
             return;
         }
         // Else, add user
@@ -290,8 +260,7 @@ app.post('/addUser', async (req,res) => {
     else
     {
         req.session.validationError += "Email already registered. Sign up with a new one, or try to login.";
-        res.redirect('/loginsubmit');
-        return;
+        res.redirect('/signup');
     }
 });
 
@@ -306,7 +275,7 @@ app.post('/loginUser', async (req,res) => {
     if(!await inDatabase(email))
     {
         req.session.validationError += "Email not registered. Sign up first.";
-        res.redirect('/signupsubmit');
+        res.redirect('/login');
     }
     // Else, email in database
     // Set rules for email
@@ -320,7 +289,7 @@ app.post('/loginUser', async (req,res) => {
         if(validationResult.error != null)
             {
                 req.session.validationError += "Invalid email.";
-                res.redirect('/loginsubmit');
+                res.redirect('/login');
             }
         // Else, if valid credentials, log user in
         else
@@ -336,10 +305,14 @@ app.post('/loginUser', async (req,res) => {
                 else
                 {
                     req.session.validationError += "Incorrect password for this email.";
-                    res.redirect('/loginsubmit');
+                    res.redirect('/login');
                 }
         }
     }
+});
+
+app.post('/updateUser', async (req,res) => {
+    
 });
 
 // At end of file

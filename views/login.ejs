@@ -1,0 +1,13 @@
+<%- include("templates/header") %>
+<p>Log In</p>
+<!--Form taken directly from COMP2537 example-->
+<form action="/loginUser" method="post">
+    <input name="email" type="text" placeholder="email"><br>
+    <input name="password" type="password" placeholder="password"><br>
+    <button>Submit</button>
+</form>
+<button onclick="window.location.replace('/signup')">Sign Up</button>
+<% if(error) { %>
+<p id="error"><%=error%></p>
+<% } %>
+<%- include("templates/footer") %>

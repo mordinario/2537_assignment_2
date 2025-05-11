@@ -14,5 +14,7 @@
         <input name="password" type="password" placeholder="password"><br>
         <button>Submit</button>
     </form>
-    <p id="error"></p>
+    <% if(error) { %>
+    <p id="error"><%=error%></p>
+    <% } %>
 </body>
