@@ -1,7 +1,7 @@
 {
-    "name": "assignment_1",
+    "name": "assignment_2",
     "version": "1.0.0",
-    "description": "v1.0 - Assignment 1 of COMP2537\r ===================================",
+    "description": "v1.0 - Assignment 2 of COMP2537\r ===================================",
     "main": "index.js",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1"
