@@ -1,33 +1,33 @@
 <%- include("templates/header") %>
-<p id="welcome">Hello!
-    <% if(auth != "None") { %> 
-        You're authenticated.
-    <% } %>
-</p>
-<button id="firstButton"
-<% if(auth != "None") { %>
-    onclick="window.location.replace('/loggedin')"
-<% } else { %>
-    onclick="window.location.replace('/signup')"
-<% } %>
->
+    <p id="welcome">Hello!
+        <% if(auth != "None") { %> 
+            You're authenticated.
+        <% } %>
+    </p>
+    <button id="firstButton"
     <% if(auth != "None") { %>
-        Go To Members Page
+        onclick="window.location.replace('/members')"
     <% } else { %>
-        Signup
+        onclick="window.location.replace('/signup')"
     <% } %>
-</button>
-<button id="secondButton"
-<% if(auth != "None") { %>
-    onclick="window.location.replace('/logout')"
-<% } else { %>
-    onclick="window.location.replace('/login')"
-<% } %>
->
+    >
+        <% if(auth != "None") { %>
+            Go To Members Page
+        <% } else { %>
+            Signup
+        <% } %>
+    </button>
+    <button id="secondButton"
     <% if(auth != "None") { %>
-        Log Out
+        onclick="window.location.replace('/logout')"
     <% } else { %>
-        Log In
+        onclick="window.location.replace('/login')"
     <% } %>
+    >
+        <% if(auth != "None") { %>
+            Log Out
+        <% } else { %>
+            Log In
+        <% } %>
 </button>
 <%- include("templates/footer") %>

@@ -67,6 +67,7 @@ const mongodb_session_secret    = process.env.MONGODB_SESSION_SECRET;
 // (taken from COMP2537 example)
 var {database} = include('databaseConnection');
 const userCollection = database.db(mongodb_database).collection('users');
+var userStatus = null;
 
 // Create connection to database(? i think this is what this does)
 var mongoStore = MongoStore.create({
@@ -94,7 +95,7 @@ async function redirectIfAuth(req, res, next)
 {
     if(req.session.authenticated)
     {
-        res.redirect('/loggedin');
+        res.redirect('/members');
     }
     else
     {
@@ -156,7 +157,24 @@ function redirectLoggedInUser(req, res)
     req.session.authenticated = true;
     req.session.name = req.body.name;
     req.session.cookie.maxAge = expireTimeMs;
-    res.redirect('/loggedin');
+    res.redirect('/members');
+}
+
+// Redirects if a person doesn't have
+// authorization
+async function validateAuthorization(req, res, next)
+{
+    const result = await userCollection.find({email: req.session.email})
+                                       .toArray();
+    const user = result[0];
+    if(user.status == "admin")
+    {
+        next();
+    }
+    else
+    {
+        res.redirect("/admin");
+    }
 }
 
 // App stuff
@@ -185,17 +203,29 @@ app.get('/login', redirectIfAuth, (req,res) => {
     });
 });
 
-app.get('/loggedin', redirectIfNoAuth, (req,res) => {
-    res.render("loggedin", {
+app.get('/members', redirectIfNoAuth, (req,res) => {
+    res.render("members", {
         title: "Main Page",
         name: req.session.name || 'user',
-        js: ["js/loggedin.js"]
+        js: ["js/members.js"]
     });
 });
 
 app.get('/logout', (req,res) => {
     req.session.destroy();
     res.redirect('/');
+});
+
+app.get('/admin', redirectIfNoAuth, async (req,res) => {
+    const result = await userCollection.find({email: req.session.email})
+                                       .toArray();
+    const user = result[0];
+    var collect = await userCollection.find().toArray();
+    res.render("admin", {
+        title: "Admin Page",
+        auth: user.status,
+        users: collect
+    })
 });
 
 app.get('/dne', (req,res) => {
@@ -252,7 +282,8 @@ app.post('/addUser', async (req,res) => {
         }
         // Else, add user
         var hashedPassword = await bcrypt.hash(password, saltRounds);
-        await userCollection.insertOne({name: name, email: email, password: hashedPassword});
+        await userCollection.insertOne({name: name, email: email, password: hashedPassword, status: "user"});
+        req.session.email = email;
         redirectLoggedInUser(req, res);
     }
     // Else, email already in database
@@ -299,6 +330,8 @@ app.post('/loginUser', async (req,res) => {
                     // Get name from database
                     userAsArray = await userCollection.find({email: email}).toArray();
                     req.body.name = userAsArray[0].name;
+                    req.session.email = userAsArray[0].email;
+                    userStatus = userAsArray[0].status;
                     redirectLoggedInUser(req, res);
                 }
                 // Else, redirect to login page
@@ -311,8 +344,15 @@ app.post('/loginUser', async (req,res) => {
     }
 });
 
-app.post('/updateUser', async (req,res) => {
-    
+app.get('/updateUser', validateAuthorization, async (req,res) => {
+    let email = req.query.user;
+    let status = req.query.status;
+    console.log([email, status]);
+    let b = await userCollection.find({email: email}).toArray();
+    console.log(b);
+    let a = await userCollection.updateOne({email: email}, {$set: {status: status}});
+    console.log(a);
+    res.redirect("/admin");
 });
 
 // At end of file
