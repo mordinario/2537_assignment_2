@@ -67,7 +67,8 @@ const mongodb_session_secret    = process.env.MONGODB_SESSION_SECRET;
 // (taken from COMP2537 example)
 var {database} = include('databaseConnection');
 const userCollection = database.db(mongodb_database).collection('users');
-var userStatus = null;
+// Set default perms
+var userStatus = "user";
 
 // Create connection to database(? i think this is what this does)
 var mongoStore = MongoStore.create({
@@ -108,7 +109,7 @@ async function redirectIfNoAuth(req, res, next)
 {
     if(!req.session.authenticated)
     {
-        res.redirect('/');
+        res.redirect('/login');
     }
     else
     {
@@ -177,36 +178,58 @@ async function validateAuthorization(req, res, next)
     }
 }
 
+async function getUserStatus(req, res, next)
+{
+    const result = await userCollection.find({email: req.session.email})
+                                       .toArray();
+    const user = result[0];
+    if(user) {
+        userStatus = user.status;
+    }
+    else
+    {
+        userStatus = "user";
+    }
+    next();
+}
+
 // App stuff
-app.get('/', (req,res) => {
+app.get('/', getUserStatus, (req,res) => {
     res.render('main', {
         title: "Main Page",
-        auth: req.session.authenticated || "None"
+        auth: req.session.authenticated || "None",
+        status: userStatus
     });
 });
 
-app.get('/signup', (req,res) => {
+app.get('/signup', getUserStatus, (req,res) => {
     let error = req.session.validationError;
     req.session.validationError = "";
     res.render("signup", {
         title: "Sign Up",
-        error: error
+        error: error,
+        auth: req.session.authenticated || "None",
+        status: userStatus
     });
 });
 
-app.get('/login', redirectIfAuth, (req,res) => {
+app.get('/login', redirectIfAuth, getUserStatus, (req,res) => {
     let error = req.session.validationError;
     req.session.validationError = "";
     res.render("login", {
         title: "Log In",
-        error: error
+        error: error,
+        auth: req.session.authenticated || "None",
+        status: userStatus
     });
 });
 
-app.get('/members', redirectIfNoAuth, (req,res) => {
+app.get('/members', redirectIfNoAuth, getUserStatus, (req,res) => {
     res.render("members", {
         title: "Main Page",
         name: req.session.name || 'user',
+        auth: req.session.authenticated || "None",
+        status: userStatus,
         js: ["js/members.js"]
     });
 });
@@ -216,21 +239,24 @@ app.get('/logout', (req,res) => {
     res.redirect('/');
 });
 
-app.get('/admin', redirectIfNoAuth, async (req,res) => {
+app.get('/admin', redirectIfNoAuth, getUserStatus, async (req,res) => {
     const result = await userCollection.find({email: req.session.email})
                                        .toArray();
     const user = result[0];
     var collect = await userCollection.find().toArray();
     res.render("admin", {
         title: "Admin Page",
-        auth: user.status,
-        users: collect
+        users: collect,
+        auth: req.session.authenticated || "None",
+        status: user.status || "user"
     })
 });
 
-app.get('/dne', (req,res) => {
+app.get('/dne', getUserStatus, (req,res) => {
     res.status(404).render("dne", {
-        title: "404 - Page Does Not Exist"
+        title: "404 - Page Does Not Exist",
+        auth: req.session.authenticated || "None",
+        status: userStatus
     });
 });
 
@@ -262,17 +288,17 @@ app.post('/addUser', async (req,res) => {
         // log error and redirect
         if(nameValidation.error != null)
         {
-            req.session.validationError += "Invalid name (either missing, not exclusively alphanumeric characters, or greater than 20 characters)\n";
+            req.session.validationError += "Invalid name (either missing, not exclusively alphanumeric characters, or greater than 20 characters)</p><p>";
             error = true;
         }
         if(emailValidation.error != null)
         {
-            req.session.validationError += "Invalid email (either missing or invalid email)\n";
+            req.session.validationError += "Invalid email (either missing or invalid email)</p><p>";
             error = true;
         }
         if(passwordValidation.error != null)
         {
-            req.session.validationError += "Invalid password (either missing, not exclusively alphanumeric characters, or greater than 20 characters)\n";
+            req.session.validationError += "Invalid password (either missing, not exclusively alphanumeric characters, or greater than 20 characters)</p><p>";
             error = true;
         }
         if(error == true)
@@ -301,57 +327,57 @@ app.post('/loginUser', async (req,res) => {
     var email = req.body.email;
     var password = req.body.password;
     req.session.validationError = "";
-    // If email not in database,
-    // redirect to signup page
-    if(!await inDatabase(email))
+    // Set rules for email
+    const schema = Joi.string().email({tlds: {allow: false}}).required();
+    // Validate email
+    const validationResult = schema.validate(email);
+    // If email is invalid,
+    // log error and redirect
+    if(validationResult.error != null)
     {
-        req.session.validationError += "Email not registered. Sign up first.";
+        req.session.validationError += "Invalid email.";
         res.redirect('/login');
     }
-    // Else, email in database
-    // Set rules for email
+    // Else, email is valid
     else
     {
-        const schema = Joi.string().email({tlds: {allow: false}}).required();
-        // Validate email
-        const validationResult = schema.validate(email);
-        // If email is invalid,
-        // log error and redirect
-        if(validationResult.error != null)
-            {
-                req.session.validationError += "Invalid email.";
-                res.redirect('/login');
-            }
+        // If email not in database,
+        // // redirect to signup page
+        if(!await inDatabase(email))
+        {
+            req.session.validationError += "Email not registered. Sign up first.";
+            res.redirect('/login');
+        }
         // Else, if valid credentials, log user in
         else
         {
             if(await validPassword(email, password))
-                {
-                    // Get name from database
-                    userAsArray = await userCollection.find({email: email}).toArray();
-                    req.body.name = userAsArray[0].name;
-                    req.session.email = userAsArray[0].email;
-                    userStatus = userAsArray[0].status;
-                    redirectLoggedInUser(req, res);
-                }
-                // Else, redirect to login page
-                else
-                {
-                    req.session.validationError += "Incorrect password for this email.";
-                    res.redirect('/login');
-                }
+            {
+                // Get name from database
+                userAsArray = await userCollection.find({email: email}).toArray();
+                req.body.name = userAsArray[0].name;
+                req.session.email = userAsArray[0].email;
+                userStatus = userAsArray[0].status;
+                redirectLoggedInUser(req, res);
+            }
+            // Else, redirect to login page
+            else
+            {
+                req.session.validationError += "Incorrect password for this email.";
+                res.redirect('/login');
+            }
         }
     }
 });
 
-app.get('/updateUser', validateAuthorization, async (req,res) => {
+// Update user entry in database
+app.get('/updateUser', validateAuthorization, getUserStatus, async (req,res) => {
+    // Get email and status
     let email = req.query.user;
     let status = req.query.status;
-    console.log([email, status]);
-    let b = await userCollection.find({email: email}).toArray();
-    console.log(b);
-    let a = await userCollection.updateOne({email: email}, {$set: {status: status}});
-    console.log(a);
+    // Update database
+    await userCollection.updateOne({email: email}, {$set: {status: status}});
+    // Redirect after finished
     res.redirect("/admin");
 });
 

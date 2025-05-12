@@ -1,14 +1,16 @@
-<%- include("templates/header") %>
+<%- include("templates/header", {active: "signup"}) %>
 <p>Sign Up</p>
 <!--Form taken directly from COMP2537 example-->
 <form action="/addUser" method="post">
     <input name="name" type="text" placeholder="name"><br>
     <input name="email" type="text" placeholder="email"><br>
-    <input name="password" type="password" placeholder="password"><br>
-    <button>Submit</button>
+    <input name="password" type="password" placeholder="password"><br><br>
+    <button class="btn btn-success">Submit</button>
 </form>
-<button onclick="window.location.replace('/login')">Log In</button>
+<br>
+<button class="btn btn-primary" onclick="window.location.replace('/login')">Log In Instead</button>
 <% if(error) { %>
-<p id="error"><%=error%></p>
+<br><br>
+<p id="error"><%-error%></p>
 <% } %>
 <%- include("templates/footer") %>

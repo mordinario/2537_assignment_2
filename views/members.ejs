@@ -1,8 +1,20 @@
-<%- include("templates/header") %>
-<p id="name">Hello, <%=name%>!</p>
-<img src="img/donqui.jpg" height="300px">
-<img src="img/honglu.jpg" height="300px">
-<img src="img/ryoshu.jpg" height="300px">
-<br>
-<button onclick="window.location.replace('/logout')">Sign Out</button>
+<%- include("templates/header", {active: "members"}) %>
+<div id="container">
+    <!-- Display user's name -->
+    <p id="name">Hello, <%=name%>!</p>
+    <div class="row">
+        <div class="col-sm">
+            <img id="first_img" height="400px">
+        </div>
+        <div class="col-sm">
+            <img id="second_img" height="400px">
+        </div>
+        <div class="col-sm">
+            <img id="third_img" height="400px">
+        </div>
+    </div>
+    <br>
+    <!-- Display logout button-->
+    <button class="btn btn-primary" onclick="window.location.replace('/logout')">Log Out</button>
+</div>
 <%- include("templates/footer") %>

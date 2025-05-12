@@ -17,19 +17,33 @@
                 <span class="fs-4">COMP 2537</span>
             </a>
             <ul class="nav nav-pills">
-                <li class="nav-item">
-                    <a href="/" class="nav-link active" aria-current="page">Home</a>
-                </li> 
-                <li class="nav-item">
-                    <a href="/members" class="nav-link">Members</a>
-                </li>
-                <li class="nav-item">
-                    <a href="/login" class="nav-link">Login</a>
-                </li>
-                <li class="nav-item">
-                    <a href="/admin" class="nav-link">Admin</a>
-                </li>
+                <% if(typeof locals.auth != undefined && locals.auth != "None") { %>
+                    <li class="nav-item">
+                        <a href="/" class="nav-link <% if(active == "home") { %> active" aria-current="page <% } %>">Home</a>
+                    </li> 
+                    <li class="nav-item">
+                        <a href="/members" class="nav-link <% if(active == "members") { %> active" aria-current="page <% } %>">Members</a>
+                    </li>
+                    <% if(status == "admin") { %>
+                        <li class="nav-item">
+                            <a href="/admin" class="nav-link <% if(active == "admin") { %> active" aria-current="page <% } %>">Admin</a>
+                        </li>
+                    <% } %>
+                    <li class="nav-item">
+                        <a href="/logout" class="nav-link <% if(active == "logout") { %> active" aria-current="page <% } %>">Log Out</a>
+                    </li>
+                <% } else { %>
+                    <li class="nav-item">
+                        <a href="/" class="nav-link <% if(active == "home") { %> active" aria-current="page <% } %>">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/signup" class="nav-link <% if(active == "signup") { %> active" aria-current="page <% } %>">Sign Up</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/login" class="nav-link <% if(active == "login") { %> active" aria-current="page <% } %>">Login</a>
+                    </li>
+                <% } %>
             </ul>
         </header>
     </div>
-    <div class="px-3">
+    <div class="px-5 mx-3">

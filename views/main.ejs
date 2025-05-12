@@ -1,10 +1,10 @@
-<%- include("templates/header") %>
+<%- include("templates/header", {active: "home"}) %>
     <p id="welcome">Hello!
         <% if(auth != "None") { %> 
             You're authenticated.
         <% } %>
     </p>
-    <button id="firstButton"
+    <button id="firstButton" class="btn btn-primary"
     <% if(auth != "None") { %>
         onclick="window.location.replace('/members')"
     <% } else { %>
@@ -14,10 +14,10 @@
         <% if(auth != "None") { %>
             Go To Members Page
         <% } else { %>
-            Signup
+            Sign Up
         <% } %>
     </button>
-    <button id="secondButton"
+    <button id="secondButton" class="btn btn-primary"
     <% if(auth != "None") { %>
         onclick="window.location.replace('/logout')"
     <% } else { %>

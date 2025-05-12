@@ -1,12 +1,12 @@
-<%- include("templates/header") %>
-<% if(auth && auth == "admin") { %>
+<%- include("templates/header", {active: "admin"}) %>
+<% if(locals.status && locals.status == "admin") { %>
     <p>You're an admin!</p>
-    <ul>
+    <ul class="pb-5 mb-4">
     <% if (locals.users) users.forEach((user) => { %>
         <span><%=user.name%> (<%=user.status%>)</span>
         <div class="buttons">
-            <button class="promote" onclick="window.location.replace('/updateUser?user=<%=user.email%>&status=admin')">Promote to Admin</button>
-            <button class="demote" onclick="window.location.replace('/updateUser?user=<%=user.email%>&status=user')">Demote to User</button>
+            <button type="button" class="btn promote btn-danger" onclick="window.location.replace('/updateUser?user=<%=user.email%>&status=admin')">Promote to Admin</button>
+            <button type="button" class="btn demote btn-success" onclick="window.location.replace('/updateUser?user=<%=user.email%>&status=user')">Demote to User</button>
         </div>
         <br>
     <% }) %>
