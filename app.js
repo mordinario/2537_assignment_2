@@ -244,6 +244,7 @@ app.get('/admin', redirectIfNoAuth, getUserStatus, async (req,res) => {
                                        .toArray();
     const user = result[0];
     var collect = await userCollection.find().toArray();
+    if(user.status != "admin") res.status(403);
     res.render("admin", {
         title: "Admin Page",
         users: collect,
